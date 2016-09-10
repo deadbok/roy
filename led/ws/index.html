@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Project intro, LED control</title>
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet"
+	href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+	integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
+	crossorigin="anonymous">
+
+<!-- Optional theme -->
+<link rel="stylesheet"
+	href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+	integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp"
+	crossorigin="anonymous">
+
+<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+<script
+	src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<!-- Latest compiled and minified JavaScript -->
+<script
+	src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
+	integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+	crossorigin="anonymous"></script>
+<script>
+	// Create a websocket connection.
+	var ws = new WebSocket('ws://raspberry09:8080/ws');
+
+	// Tell us that we are connected
+	ws.onopen = function()
+	{
+		$("#con_stat").html("Connected");
+		$("#con_stat").removeClass('alert-info');
+		$("#con_stat").addClass('alert-success');
+		ws.send("states");
+	};
+
+	// Tell us that the connection has closed.
+	ws.onclose = function()
+	{
+		$("#con_stat").html("Connection closed");
+		$("#con_stat").removeClass('alert-success');
+		$("#con_stat").addClass('alert-info');
+	};
+
+	// Process any LED status change massages
+	ws.onmessage = function(event)
+	{
+		$("#con_stat").html("Message: " + event.data);
+		$("#con_stat").removeClass('alert-info');
+		$("#con_stat").addClass('alert-success');
+		json_data = JSON.parse(event.data)
+		if ('red' in json_data)
+		{
+			//Show the state by the button color
+			if (json_data['red'] === 1)
+			{
+				$('#red').addClass('btn-danger');
+			}
+			else
+			{
+				$('#red').removeClass('btn-danger');
+			}
+		}
+		if ('yellow' in json_data)
+		{
+			//Show the state by the button color
+			if (json_data['yellow'] === 1)
+			{
+				$('#yellow').addClass('btn-warning');
+			}
+			else
+			{
+				$('#yellow').removeClass('btn-warning');
+			}
+
+		}
+		if ('green' in json_data)
+		{
+			//Show the state by the button color
+			if (json_data['green'] === 1)
+			{
+				$('#green').addClass('btn-success');
+			}
+			else
+			{
+				$('#green').removeClass('btn-success');
+			}
+		}
+	};
+
+	function do_click(color)
+	{
+		$("#con_stat").html("Send: " + color);
+		$("#con_stat").removeClass('alert-info');
+		$("#con_stat").addClass('alert-success');
+		ws.send(color);
+	}
+</script>
+</head>
+<body>
+	<div id="con_stat" class="alert alert-info">Not connected</div>
+	<div class="controls btn-group" role="group">
+		<button class="btn btn-default" id="red" onclick="do_click('red');">Red</button>
+		<button class="btn btn-default" id="yellow"
+			onclick="do_click('yellow');">Yellow</button>
+		<button class="btn btn-default" id="green"
+			onclick="do_click('green');">Green</button>
+	</div>
+</body>
+</html>
