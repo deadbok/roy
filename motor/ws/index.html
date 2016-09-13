@@ -26,9 +26,12 @@
 	//Create WebSocket address from http uri.
 	var loc = window.location
 	var ws_uri;
-	if (loc.protocol === "https:") {
+	if (loc.protocol === "https:")
+	{
 		ws_uri = "wss:";
-	} else {
+	}
+	else
+	{
 		ws_uri = "ws:";
 	}
 	ws_uri += "//" + loc.host + "/ws";
@@ -40,7 +43,6 @@
 		$("#con_stat").html("Connected");
 		$("#con_stat").removeClass('alert-info');
 		$("#con_stat").addClass('alert-success');
-		ws.send("states");
 	};
 
 	// Tell us that the connection has closed.
@@ -64,21 +66,41 @@
 		$("#con_stat").html("Send: " + action);
 		$("#con_stat").removeClass('alert-info');
 		$("#con_stat").addClass('alert-success');
-		ws.send(color);
+		ws.send(action);
+	}
+	
+	function stop()
+	{
+		do_click('stop')
 	}
 </script>
+<style>
+#forward {
+	margin-left: 25%;
+}
+
+#reverse {
+	margin-left: 25%;
+}
+
+.controls {
+	padding: 1em;
+}
+</style>
 </head>
 <body>
 	<div id="con_stat" class="alert alert-info">Not connected</div>
 	<div class="controls btn-group" role="group">
-		<button class="btn btn-default" id="lup" onclick="do_click('lup');">Forward</button>
-		<button class="btn btn-default" id="rup"
-			onclick="do_click('rup');">Forward</button>
+		<button class="btn btn-default glyphicon glyphicon-chevron-up"
+			id="forward" onmousedown="do_click('forward');" onmouseup="stop();"></button>
 		<br />
-		<button class="btn btn-default" id="ldown"
-			onclick="do_click('ldown');">Reverse</button>
-		<button class="btn btn-default" id="rdown"
-			onclick="do_click('rdown');">Reverse</button>
+		<button class="btn btn-default glyphicon glyphicon-chevron-left"
+			id="left" onmousedown="do_click('left');" onmouseup="stop();"></button>
+		<button class="btn btn-default glyphicon glyphicon-chevron-right"
+			id="right" onmousedown="do_click('right');" onmouseup="stop();"></button>
+		<br />
+		<button class="btn btn-default glyphicon glyphicon-chevron-down"
+			id="reverse" onmousedown="do_click('reverse');" onmouseup="stop();"></button>
 	</div>
 </body>
 </html>

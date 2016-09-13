@@ -9,14 +9,13 @@ import logging
 import sys
 
 
-logger = logging.getLogger("project-intro-ws")
+logger = logging.getLogger("pintro.motor.ws")
 '''Our Logger object'''
 
 logger.setLevel(logging.DEBUG)
 
-file_log = handlers.RotatingFileHandler("pi.log",
-                                       maxBytes=10000000,
-                                       backupCount=5)
+file_log = handlers.RotatingFileHandler("pi.log", maxBytes=10000000,
+                                        backupCount=5)
 '''Handler for logging to a file.'''
 
 file_log.setLevel(logging.DEBUG)
@@ -26,6 +25,7 @@ file_log.doRollover()
 
 console_log = logging.StreamHandler(sys.stdout)
 '''Handler for logging to the console.'''
+
 
 def init_file_log(level=logging.DEBUG):
     '''Initialise the file logging.
