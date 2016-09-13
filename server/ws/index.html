@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Project intro, LED control</title>
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet"
+	href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+	integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
+	crossorigin="anonymous">
+
+<!-- Optional theme -->
+<link rel="stylesheet"
+	href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+	integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp"
+	crossorigin="anonymous">
+
+<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+<script
+	src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<!-- Latest compiled and minified JavaScript -->
+<script
+	src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
+	integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+	crossorigin="anonymous"></script>
+<script>
+	//Create WebSocket address from http uri.
+	var loc = window.location
+	var ws_uri;
+	if (loc.protocol === "https:") {
+		ws_uri = "wss:";
+	} else {
+		ws_uri = "ws:";
+	}
+	ws_uri += "//" + loc.host + "/ws";
+	var ws = new WebSocket(ws_uri);
+
+	// Tell us that we are connected
+	ws.onopen = function()
+	{
+		$("#con_stat").html("Connected");
+		$("#con_stat").removeClass('alert-info');
+		$("#con_stat").addClass('alert-success');
+		ws.send("states");
+	};
+
+	// Tell us that the connection has closed.
+	ws.onclose = function()
+	{
+		$("#con_stat").html("Connection closed");
+		$("#con_stat").removeClass('alert-success');
+		$("#con_stat").addClass('alert-info');
+	};
+
+	// Process any LED status change massages
+	ws.onmessage = function(event)
+	{
+		$("#con_stat").html("Message: " + event.data);
+		$("#con_stat").removeClass('alert-info');
+		$("#con_stat").addClass('alert-success');
+	};
+
+	function do_click(action)
+	{
+		$("#con_stat").html("Send: " + action);
+		$("#con_stat").removeClass('alert-info');
+		$("#con_stat").addClass('alert-success');
+		ws.send(color);
+	}
+</script>
+</head>
+<body>
+	<div id="con_stat" class="alert alert-info">Not connected</div>
+	<div class="controls btn-group" role="group">
+		<button class="btn btn-default" id="lup" onclick="do_click('lup');">Forward</button>
+		<button class="btn btn-default" id="rup"
+			onclick="do_click('rup');">Forward</button>
+		<br />
+		<button class="btn btn-default" id="ldown"
+			onclick="do_click('ldown');">Reverse</button>
+		<button class="btn btn-default" id="rdown"
+			onclick="do_click('rdown');">Reverse</button>
+	</div>
+</body>
+</html>

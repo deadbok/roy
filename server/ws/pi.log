@@ -1,0 +1,35 @@
+2016-09-13 02:28:21,285 - pin.py - <module> - WARNING: Could not import RPi.GPIO
+2016-09-13 02:28:21,285 - pins.py - <module> - WARNING: Could not import RPi.GPIO
+2016-09-13 02:28:21,285 - server.py - <module> - WARNING: Could not import RPi.GPIO
+2016-09-13 02:28:21,287 - server.py - main - INFO: Project intro WebSocket server.
+2016-09-13 02:28:21,287 - pins.py - __init__ - DEBUG: Constructing pins
+2016-09-13 02:28:21,287 - pin.py - __init__ - DEBUG: Contructing pin: 1
+2016-09-13 02:28:21,287 - pin.py - __init__ - DEBUG: Contructing pin: 2
+2016-09-13 02:28:21,287 - pin.py - __init__ - DEBUG: Contructing pin: 3
+2016-09-13 02:28:21,287 - pin.py - __init__ - DEBUG: Contructing pin: 4
+2016-09-13 02:28:21,288 - pin.py - __init__ - DEBUG: Contructing pin: 5
+2016-09-13 02:28:21,288 - pin.py - __init__ - DEBUG: Contructing pin: 6
+2016-09-13 02:28:21,288 - pin.py - __init__ - DEBUG: Contructing pin: 7
+2016-09-13 02:28:21,288 - pin.py - __init__ - DEBUG: Contructing pin: 8
+2016-09-13 02:28:21,288 - pin.py - __init__ - DEBUG: Contructing pin: 9
+2016-09-13 02:28:21,288 - pin.py - __init__ - DEBUG: Contructing pin: 10
+2016-09-13 02:28:21,288 - pin.py - __init__ - DEBUG: Contructing pin: 11
+2016-09-13 02:28:21,288 - pin.py - __init__ - DEBUG: Contructing pin: 12
+2016-09-13 02:28:21,289 - pin.py - __init__ - DEBUG: Contructing pin: 13
+2016-09-13 02:28:21,289 - pin.py - __init__ - DEBUG: Contructing pin: 14
+2016-09-13 02:28:21,289 - pin.py - __init__ - DEBUG: Contructing pin: 15
+2016-09-13 02:28:21,289 - pin.py - __init__ - DEBUG: Contructing pin: 16
+2016-09-13 02:28:21,289 - pin.py - __init__ - DEBUG: Contructing pin: 17
+2016-09-13 02:28:21,289 - pin.py - __init__ - DEBUG: Contructing pin: 18
+2016-09-13 02:28:21,289 - pin.py - __init__ - DEBUG: Contructing pin: 19
+2016-09-13 02:28:21,289 - pin.py - __init__ - DEBUG: Contructing pin: 20
+2016-09-13 02:28:21,290 - pin.py - __init__ - DEBUG: Contructing pin: 21
+2016-09-13 02:28:21,290 - pin.py - __init__ - DEBUG: Contructing pin: 22
+2016-09-13 02:28:21,290 - pin.py - __init__ - DEBUG: Contructing pin: 23
+2016-09-13 02:28:21,290 - pin.py - __init__ - DEBUG: Contructing pin: 24
+2016-09-13 02:28:21,290 - pin.py - __init__ - DEBUG: Contructing pin: 25
+2016-09-13 02:28:21,290 - pins.py - __init__ - DEBUG: Turning off GPIO warnings.
+2016-09-13 02:28:21,291 - pins.py - __init__ - DEBUG: Setting Broadcomm pin numbering scheme.
+2016-09-13 02:28:21,291 - server.py - main - INFO: Listening on port: 8080
+2016-09-13 02:28:33,131 - server.py - open - DEBUG: New connection was opened
+2016-09-13 02:28:33,238 - server.py - on_message - DEBUG: Incoming message: states
