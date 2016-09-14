@@ -5,7 +5,7 @@ from log import logger
 from pin import Pin
 
 try:
-    import RPi.GPIO
+    import RPi.GPIO as GPIO
 except ImportError:
     logger.warning("Could not import RPi.GPIO")
 
@@ -24,9 +24,14 @@ class Pins(object):
         logger.debug("Turning off GPIO warnings.")
         if not emulate:
             GPIO.setwarnings(False)
+        else:
+            logger.debug("(Emulated)")
+
         logger.debug("Setting Broadcomm pin numbering scheme.");
         if not emulate:
             GPIO.setmode(GPIO.BCM)
+        else:
+            logger.debug("(Emulated)")
 
         self.emulate = emulate
 

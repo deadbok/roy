@@ -4,7 +4,7 @@ Abstract Raspberry Pi pin.
 from log import logger
 
 try:
-    import RPi.GPIO
+    import RPi.GPIO as GPIO
 
     GPIOIN = GPIO.IN
     GPIOOUT = GPIO.OUT
@@ -49,8 +49,11 @@ class Pin(object):
             logger.debug("Setting PWM on pin " + str(self.number))
             if not self.emulate:
                 self.pwm = GPIO.setup(self.number, pwm_freq)
+            else:
+                logger.debug("(Emulated)")
         else:
             self.pwm = None
+	self.pwm_freq = pwm_freq
         # Duty cycle
         self.duty = 0
 
@@ -68,6 +71,8 @@ class Pin(object):
         logger.debug("Setting pin " + str(self.number) + " direction to " + str_dir)
         if not self.emulate:
             GPIO.setup(self.number, direction)
+        else:
+            logger.debug("(Emulated)")
 
         self.setup_done = True
 
@@ -78,11 +83,11 @@ class Pin(object):
         # Check for setup
         if not self.setup_done:
             logger.warning("(pin: " + str(self.number) +
-                  "): using default pin configuration.")
+                  ") using default pin configuration.")
         # Check direction
         if self.direction == GPIOIN:
             logger.warning("(pin: " + str(self.number) +
-                  ")trying to write to an input pin.")
+                  ") trying to write to an input pin.")
             return 0
 
         if state > 0:
@@ -94,15 +99,21 @@ class Pin(object):
             if state > 0:
                 logger.debug("Starting PWM on pin " + str(self.number))
                 if not self.emulate:
-                    self.pwm.start()
+                    self.pwm.start(self.duty)
+                else:
+                    logger.debug("(Emulated)")
             else:
                 logger.debug("Stopping PWM on pin " + str(self.number))
                 if not self.emulate:
                     self.pwm.stop()
+                else:
+                    logger.debug("(Emulated)")
         else:
             logger.debug("Setting pin " + str(self.number) + " to state " + str(self.state))
             if not self.emulate:
                 GPIO.output(self.number, self.state)
+            else:
+               logger.debug("(Emulated)")
 
     def get(self):
         '''
@@ -114,6 +125,8 @@ class Pin(object):
 
         if not self.emulate:
             self.state = GPIO.input(self.number)
+        else:
+            logger.debug("(Emulated)")
 
         logger.debug("Getting pin " + str(self.number) + " state " + str(self.state))
 
@@ -128,6 +141,8 @@ class Pin(object):
         logger.debug("Setting pin " + str(self.number) + " direction to " + str_dir)
         if not self.emulate:
             GPIO.setup(self.number, direction)
+        else:
+             logger.debug("(Emulated)")
 
     def set_duty(self, duty):
         '''
@@ -146,7 +161,7 @@ class Pin(object):
         if self.pwm is None:
             logger.debug("Enabling PWM on pin " + str(self.number))
             if not self.emulate:
-                self.pwm = GPIO.setup(self.number, pwm_freq)
+                self.pwm = GPIO.PWM(self.number, self.pwm_freq)
             else:
                 self.pwm = 1
         else:

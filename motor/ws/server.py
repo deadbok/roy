@@ -17,7 +17,7 @@ from abstractMotor.motor import Motor
 
 # Emulate if the RPi.GPIO package is not available
 try:
-    import RPi.GPIO
+    import RPi.GPIO as GPIO
 
     EMU = False
 except ImportError:
@@ -107,7 +107,8 @@ def main():
         logger.setLevel(logging.INFO)
 
     logger.info("Project intro WebSocket server.")
-
+    if options.emulate or EMU:
+	logger.info("RPi GPIO's are emulated")
     rpio_pins = Pins(options.emulate or EMU)
 
     MOTOR_ONE = Motor(rpio_pins, 17, 22, 27)
