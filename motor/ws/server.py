@@ -78,7 +78,7 @@ class T9(object):
         del T9.websocket[index]
         logger.debug("Removed connection number " + str(index))
 
-    def forward(self, speed=50):
+    def forward(self, lspeed=100, rspeed=75):
         '''
         Make the robot go forward, using th same speed for both motors.
         
@@ -86,36 +86,17 @@ class T9(object):
         '''
         #Tell the connected clients what we're about to do
         for connection in T9.websocket:
-            connection.write_message('Forward: ' + str(speed))
+            connection.write_message('Forward: ' + str(lspeed) + ', ' + str(rspeed))
         #Set both motors to forward direction.
         GPIO.output(self.ld1, 1)
         GPIO.output(self.rd1, 1)
         GPIO.output(self.ld2, 0)
         GPIO.output(self.rd2, 0)
         #Apply the same speed to both motors 
-        self.lpwm.start(speed)
-        self.rpwm.start(speed)
-
-    def turn(self, lspeed=50, rspeed=50):
-        '''
-        Turn the robot, by applying different speed to each motor
-        
-        :param lspeed: Speed to aply to the left motor
-        :param rspeed: Speed to aply to the left motor
-        '''
-        #Tell the connected clients what we're about to do
-        for connection in T9.websocket:
-            connection.write_message('Turn: ' + str(lspeed) + ", " + str(rspeed))
-        #Set both motors to forward direction.
-        GPIO.output(self.ld1, 1)
-        GPIO.output(self.rd1, 1)
-        GPIO.output(self.ld2, 0)
-        GPIO.output(self.rd2, 0)
-        #Apply the speed values to each individual motor
         self.lpwm.start(lspeed)
         self.rpwm.start(rspeed)
 
-    def reverse(self, speed):
+    def reverse(self, lspeed=75, rspeed=100):
         '''
         Make the robot go backwards
         
@@ -123,15 +104,15 @@ class T9(object):
         ''' 
         #Tell the connected clients what we're about to do
         for connection in T9.websocket:
-            connection.write_message('Reverse: ' + str(speed))
+            connection.write_message('Reverse: ' + str(lspeed) + ', ' + str(rspeed))
         #Set the direction of the motor to backwards
         GPIO.output(self.ld1, 0)
         GPIO.output(self.rd1, 0)
         GPIO.output(self.ld2, 1)
         GPIO.output(self.rd2, 1)
         #Apply the same speed to both motors
-        self.lpwm.start(speed)
-        self.rpwm.start(speed)
+        self.lpwm.start(lspeed)
+        self.rpwm.start(rspeed)
 
     def stop(self):
         #Tell the connected clients what we're about to do
@@ -216,16 +197,16 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
     '''
     def __init__(self, application, request, **kwargs):
         '''
-        Contstructor for the WebSocket handler.
+        Constructor for the WebSocket handler.
         '''
-        # Call the parent constructor.
-        super(WebSocketHandler, self).__init__(application, request, **kwargs)
         # If there is no robot instance create both that and the sensor instance.
         if WebSocketHandler.robot is None:
             WebSocketHandler.robot = T9()
-            WebSocketHandler.Sensor = Sensor()
+            WebSocketHandler.sensor = Sensor()
+        # Call the parent constructor.
+        super(WebSocketHandler, self).__init__(application, request, **kwargs)
         #TODO: look at 
-        tornado.ioloop.IOLoop.instance().add_callback(self.read_sensor())
+        #tornado.ioloop.IOLoop.instance().add_callback(self.read_sensor())
 
     def open(self):
         '''
@@ -246,27 +227,28 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             command = command.lower().strip()
             logger.debug("Command " + command)
             if (command == "forward"):
-                WebSocketHandler.robot.forward()
+                WebSocketHandler.robot.forward(100, 90)
 
             if (command == "left"):
-                WebSocketHandler.robot.turn(50, 5)
+                WebSocketHandler.robot.forward(100, 50)
 
             if (command == "right"):
-                WebSocketHandler.robot.turn(5, 50)
+                WebSocketHandler.robot.forward(50, 100)
 
             if (command == "reverse"):
-                WebSocketHandler.robot.reverse(50)
+                WebSocketHandler.robot.reverse(100, 80)
 
             if (command == "stop"):
                 WebSocketHandler.robot.stop()
 
     def on_close(self):
         '''
-        Called when the WebSocker connection is closed
+        Called when the WebSocket connection is closed
         '''
         logger.info("Connection closed")
-        WebSocketHandler.robot.removeWebsocket(self.rid)
-        WebSocketHandler.robot.removeWebsocket(self.sid)
+        if self.sid is not None:
+            WebSocketHandler.robot.removeWebsocket(self.rid)
+            WebSocketHandler.robot.removeWebsocket(self.sid)
 
     def read_sensor(self):
         '''
@@ -276,7 +258,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         if WebSocketHandler.sensor is not None:
             val = WebSocketHandler.sensor.read()
             logger.debug("Read sensor value: " + str(val))
-        tornado.ioloop.IOLoop.instance().add_callback(self.read_sensor())
+        # tornado.ioloop.IOLoop.instance().add_callback(self.read_sensor())
 
 
 # Instantiate the Tornade application.
