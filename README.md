@@ -7,3 +7,9 @@ OEAIT16EINB intro project, team 9
 The moter example uses an abstraction layer, and will run on most GNU/Linux
 systems. The emulation layer will output the RPI GPIO commands to the console.
 
+## Dependencies ##
+
+ * RPi.GPIO
+ * Tornado (python-tornado)
+
+

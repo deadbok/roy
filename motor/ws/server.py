@@ -13,7 +13,7 @@ from log import logger, init_file_log, init_console_log, close_log
 
 import RPi.GPIO as GPIO
 
-#Setup "debug" and "port" as extra commandline options.
+# Setup "debug" and "port" as extra commandline options.
 define("debug", default=False, help="Output debug mesages on console", type=bool)
 define("port", default=8080, help="Listen on the given port", type=int)
 
@@ -33,26 +33,26 @@ class T9(object):
         :param lpins: Tuple of the enable and direction pins of the left motor using Bradcomm numbering.
         :param rpins: Tuple of the enable and direction pins of the right motor using Bradcomm numbering.
         '''
-        #Save the pin-mapping of the enable pins.
+        # Save the pin-mapping of the enable pins.
         self.lenable = lpins[0]
         self.renable = rpins[0]
 
-        #Save the pin-mapping of the directional pins.
+        # Save the pin-mapping of the directional pins.
         self.ld1 = lpins[1]
         self.rd1 = rpins[1]
         self.ld2 = lpins[2]
         self.rd2 = rpins[2]
 
-        #Set all left motor pins as output
+        # Set all left motor pins as output
         GPIO.setup(self.lenable, GPIO.OUT)
         GPIO.setup(self.ld1, GPIO.OUT)
         GPIO.setup(self.ld2, GPIO.OUT)
-        #Set all right motor pins as output
+        # Set all right motor pins as output
         GPIO.setup(self.renable, GPIO.OUT)
         GPIO.setup(self.rd1, GPIO.OUT)
         GPIO.setup(self.rd2, GPIO.OUT)
 
-        #Use pulse width modulation on the enable pins of both motors.
+        # Use pulse width modulation on the enable pins of both motors.
         self.lpwm = GPIO.PWM(self.lenable, 100)
         self.rpwm = GPIO.PWM(self.renable, 100)
 
@@ -63,10 +63,10 @@ class T9(object):
         :param ws: WebSocket connection.
         :type ws: tornado.websocket.WebSocketHandler
         '''
-        #Add the new websocker to the list of receivers.
+        # Add the new websocker to the list of receivers.
         T9.websocket.append(ws)
         logger.debug("Added connection number " + str(len(T9.websocket)))
-        #Return the position in the list of the new receiver.
+        # Return the position in the list of the new receiver.
         return(len(T9.websocket) - 1)
 
     def removeWebsocket(self, index):
@@ -84,15 +84,15 @@ class T9(object):
         
         :param speed: The speed to pply to both motors.
         '''
-        #Tell the connected clients what we're about to do
+        # Tell the connected clients what we're about to do
         for connection in T9.websocket:
             connection.write_message('Forward: ' + str(lspeed) + ', ' + str(rspeed))
-        #Set both motors to forward direction.
+        # Set both motors to forward direction.
         GPIO.output(self.ld1, 1)
         GPIO.output(self.rd1, 1)
         GPIO.output(self.ld2, 0)
         GPIO.output(self.rd2, 0)
-        #Apply the same speed to both motors 
+        # Apply the same speed to both motors
         self.lpwm.start(lspeed)
         self.rpwm.start(rspeed)
 
@@ -101,29 +101,29 @@ class T9(object):
         Make the robot go backwards
         
         :param speed: The speed applied to both motors.
-        ''' 
-        #Tell the connected clients what we're about to do
+        '''
+        # Tell the connected clients what we're about to do
         for connection in T9.websocket:
             connection.write_message('Reverse: ' + str(lspeed) + ', ' + str(rspeed))
-        #Set the direction of the motor to backwards
+        # Set the direction of the motor to backwards
         GPIO.output(self.ld1, 0)
         GPIO.output(self.rd1, 0)
         GPIO.output(self.ld2, 1)
         GPIO.output(self.rd2, 1)
-        #Apply the same speed to both motors
+        # Apply the same speed to both motors
         self.lpwm.start(lspeed)
         self.rpwm.start(rspeed)
 
     def stop(self):
-        #Tell the connected clients what we're about to do
+        # Tell the connected clients what we're about to do
         for connection in T9.websocket:
             connection.write_message('Stop')
-        #Set all directional outputs to off
+        # Set all directional outputs to off
         GPIO.output(self.ld1, 0)
         GPIO.output(self.rd1, 0)
         GPIO.output(self.ld2, 0)
         GPIO.output(self.rd2, 0)
-        #Shut off the PWM signal.
+        # Shut off the PWM signal.
         self.lpwm.stop()
         self.rpwm.stop()
 
@@ -141,9 +141,9 @@ class Sensor(object):
         
         :param pin: The pin that the sensor board is connected to, using Broadcomm numbering.
         '''
-        #Save the pin number
+        # Save the pin number
         self.pin = pin
-        #Set the pin as an input
+        # Set the pin as an input
         GPIO.setup(self.pin, GPIO.IN)
 
     def addWebsocket(self, ws):
@@ -205,15 +205,15 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             WebSocketHandler.sensor = Sensor()
         # Call the parent constructor.
         super(WebSocketHandler, self).__init__(application, request, **kwargs)
-        #TODO: look at 
-        #tornado.ioloop.IOLoop.instance().add_callback(self.read_sensor())
+        # TODO: look at
+        # tornado.ioloop.IOLoop.instance().add_callback(self.read_sensor())
 
     def open(self):
         '''
         This is called when someone opens a connection.
         '''
         logger.info("New connection was opened")
-        #Add the connection to the robot and sensor, so that the may cry out.
+        # Add the connection to the robot and sensor, so that the may cry out.
         self.rid = WebSocketHandler.robot.addWebsocket(self)
         self.sid = WebSocketHandler.sensor.addWebsocket(self)
 
@@ -222,7 +222,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         This is called whenever a Websocket messages arrives.
         '''
         logger.info('Incoming message: ' + message)
-        #Isolate the command, and call the actual handler in the robot class.
+        # Isolate the command, and call the actual handler in the robot class.
         for command in message.split('\n'):
             command = command.lower().strip()
             logger.debug("Command " + command)
@@ -258,7 +258,12 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         if WebSocketHandler.sensor is not None:
             val = WebSocketHandler.sensor.read()
             logger.debug("Read sensor value: " + str(val))
-        # tornado.ioloop.IOLoop.instance().add_callback(self.read_sensor())
+
+        if val == 0:
+            WebSocketHandler.robot.forward(25, 50)
+        else:
+            WebSocketHandler.robot.forward(50, 25)
+
 
 
 # Instantiate the Tornade application.
@@ -271,7 +276,7 @@ def main():
     '''
     Main entry point, start the server.
     '''
-    #Tell Tornado to parse the command line for us.
+    # Tell Tornado to parse the command line for us.
     tornado.options.parse_command_line()
 
     # Init logging to file
@@ -291,7 +296,7 @@ def main():
 
     logger.info("Project intro WebSocket server.")
 
-    # Intital setup of the Raspberry Pi. 
+    # Intital setup of the Raspberry Pi.
     # GPIO.setwarnings(False)
     GPIO.setmode(GPIO.BCM)
 
@@ -299,10 +304,12 @@ def main():
     http_server = tornado.httpserver.HTTPServer(APP)
     http_server.listen(options.port)
     logger.info("Listening on port: " + str(options.port))
-    #Start the Tornado event loop.
+
+    tornado.ioloop.PeriodicCallback(WebSocketHandler.read_sensor, 500).start()
+    # Start the Tornado event loop.
     tornado.ioloop.IOLoop.instance().start()
 
-    #Close the log if we're done.
+    # Close the log if we're done.
     close_log()
 
 if __name__ == "__main__":
