@@ -57,6 +57,7 @@
 	ws.onmessage = function(event)
 	{
 		$("#con_stat").html("Message: " + event.data);
+		$("#msg").append(event.data + "\n");
 		$("#con_stat").removeClass('alert-info');
 		$("#con_stat").addClass('alert-success');
 	};
@@ -86,6 +87,11 @@
 .controls {
 	padding: 1em;
 }
+
+pre {
+	font-size: x-small;
+	color: gray;
+}
 </style>
 </head>
 <body>
@@ -102,5 +108,10 @@
 		<button class="btn btn-default glyphicon glyphicon-chevron-down"
 			id="reverse" onmousedown="do_click('reverse');" onmouseup="stop();"></button>
 	</div>
+	<div class="panel panel-default">
+	<div class="panel-heading">Messages</div>
+  <div class="panel-body"><pre id="msg"></pre>
+  </div>
+</div>
 </body>
 </html>
