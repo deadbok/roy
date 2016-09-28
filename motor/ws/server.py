@@ -15,7 +15,7 @@ import RPi.GPIO as GPIO
 
 
 # Setup "debug" and "port" as extra command line options.
-define("debug", default=False, help="Output debug mesages on console", type=bool)
+define("debug", default=False, help="Output debug messages on console", type=bool)
 define("port", default=8080, help="Listen on the given port", type=int)
 
 
@@ -79,7 +79,7 @@ class T9(object):
 
     def removeWebsocket(self, index):
         '''
-        Remove a websocker connection front the list of receivers
+        Remove a WebSocket connection front the list of receivers
         
         :param index: The index of the WebSocket to remove.
         '''
@@ -88,9 +88,10 @@ class T9(object):
 
     def forward(self, lspeed=100, rspeed=75):
         '''
-        Make the robot go forward, using th same speed for both motors.
+        Make the robot go forward.
         
-        :param speed: The speed to pply to both motors.
+        :param lspeed: The speed to apply to the left motor.
+        :param lspeed: The speed to apply to the right motor.
         '''
         # Tell the connected clients what we're about to do
         for connection in T9.websocket:
@@ -108,7 +109,8 @@ class T9(object):
         '''
         Make the robot go backwards
         
-        :param speed: The speed applied to both motors.
+        :param lspeed: The speed to apply to the left motor.
+        :param lspeed: The speed to apply to the right motor.
         '''
         # Tell the connected clients what we're about to do
         for connection in T9.websocket:
@@ -158,10 +160,7 @@ class Sensor(object):
         # Set the pin as an input
         GPIO.setup(self.pin, GPIO.IN)
         #Setup event handling on the sensor
-        if self.light_callback is not None:
-            GPIO.add_event_detect(self.pin, GPIO.FALLING, callback=self.light_callback, bouncetime=100)
-        if self.dark_callback is not None:
-            GPIO.add_event_detect(self.pin, GPIO.RISING, callback=self.dark_callback, bouncetime=100)
+        GPIO.add_event_detect(self.pin, GPIO.BOTH, callback=self.event_dispatch, bouncetime=100)
 
     def addWebsocket(self, ws):
         '''
@@ -186,9 +185,25 @@ class Sensor(object):
         '''
         ret = GPIO.input(self.pin)
         for connection in Sensor.websocket:
-            connection.write_message('Sensor: ' + str(ret))
+            connection.write_message('Sensor (pin ' + str(self.pin) + '): ' + str(ret))
 
         return ret
+    
+    def event_dispatch(self, pin):
+        '''
+        Called on both rising and falling edge. Dispatch to the right handler.
+        '''
+        val = GPIO.input(self.pin)
+        
+        for connection in Sensor.websocket:
+            connection.write_message('Sensor event (pin ' + str(self.pin) + '): ' + str(val))
+            
+        if val == 0:
+            if self.light_callback is not None:
+                self.light_callback()
+        else:
+            if self.dark_callback is not None:
+                self.dark_callback()
     
 
 class Button(object):
@@ -214,9 +229,7 @@ class Button(object):
         GPIO.setup(self.pin, GPIO.IN)
         #Setup event handling on the sensor
         if self.press_callback is not None:
-            GPIO.add_event_detect(self.pin, GPIO.RISING, callback=self.press_callback, bouncetime=200)
-        if self.release_callback is not None:
-            GPIO.add_event_detect(self.pin, GPIO.FALLING, callback=self.release_callback, bouncetime=200)
+            GPIO.add_event_detect(self.pin, GPIO.BOTH, callback=self.event_dispatch, bouncetime=200)
 
     def addWebsocket(self, ws):
         '''
@@ -241,9 +254,25 @@ class Button(object):
         '''
         ret = GPIO.input(self.pin)
         for connection in Button.websocket:
-            connection.write_message('Sensor: ' + str(ret))
+            connection.write_message('Button (pin ' + str(self.pin) + '): ' + str(ret))
 
         return ret
+    
+    def event_dispatch(self, pin):
+        '''
+        Called on both rising and falling edge. Dispatch to the right handler.
+        '''
+        val = GPIO.input(self.pin)
+        
+        for connection in Button.websocket:
+            connection.write_message('Button event (pin ' + str(self.pin) + '): ' + str(val))
+        
+        if val == 0:
+            if self.press_callback is not None:
+                self.press_callback()
+        else:
+            if self.release_callback is not None:
+                self.release_callback()    
 
 
 
@@ -275,14 +304,6 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
     '''
     Stop button.
     '''
-    light_btn = None
-    '''
-    Calibrate light value button.
-    '''
-    dark_btn = None
-    '''
-    Calibrate dark button.
-    '''
     running = False
     '''
     True when the line follower program is running
@@ -294,9 +315,9 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         # If there is no robot instance create both that and the sensor instance.
         if WebSocketHandler.robot is None:
             WebSocketHandler.robot = T9(lpins=LEFT_MOTOR, rpins=RIGHT_MOTOR)
-            WebSocketHandler.sensor = Sensor(pin=LIGHT_SENSOR, light_callback=self.event_light(), dark_callback=self.event_dark())
-            WebSocketHandler.start_btn = Button(pin=START_BUTTON, press_callback=self.event_run())
-            WebSocketHandler.stop_btn = Button(pin=STOP_BUTTON, press_callback=self.event_stop())
+            WebSocketHandler.sensor = Sensor(pin=LIGHT_SENSOR, light_callback=self.event_light, dark_callback=self.event_dark)
+            WebSocketHandler.start_btn = Button(pin=START_BUTTON, press_callback=self.event_run)
+            WebSocketHandler.stop_btn = Button(pin=STOP_BUTTON, press_callback=self.event_stop)
         # Call the parent constructor.
         super(WebSocketHandler, self).__init__(application, request, **kwargs)
 
@@ -349,7 +370,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         # Tell the value to any connected client.
         # the input should be zero since we're called on the falling edge.
         if WebSocketHandler.sensor is not None:
-            logger.debug("Read is seeing light: " + str(val))
+            logger.debug("Sensor is seeing light")
 
         if self.running:
             WebSocketHandler.robot.forward(25, 50)
@@ -358,10 +379,11 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         '''
         Called when the sensor input detects a rising edge (turning dark)
         '''
+        logger.debug("Sensor event.")
         # Tell the value to any connected client.
         # the input should be zero since we're called on the falling edge.
         if WebSocketHandler.sensor is not None:
-            logger.debug("Read is seeing darkness: " + str(val))
+            logger.debug("Sensor is seeing darkness")
         
         if self.running:
             WebSocketHandler.robot.forward(50, 25)
@@ -370,12 +392,14 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         '''
         Start the line following routines.
         '''
+        logger.debug("Start button pressed")
         WebSocketHandler.running = True;
 
     def event_stop(self):
         '''
         Stop the line following routines.
         '''
+        logger.debug("Stop button pressed")
         WebSocketHandler.running = False;
 
 
