@@ -13,9 +13,17 @@ from log import logger, init_file_log, init_console_log, close_log
 
 import RPi.GPIO as GPIO
 
-# Setup "debug" and "port" as extra commandline options.
+
+# Setup "debug" and "port" as extra command line options.
 define("debug", default=False, help="Output debug mesages on console", type=bool)
 define("port", default=8080, help="Listen on the given port", type=int)
+
+
+LEFT_MOTOR = (17, 22, 17)
+RIGHT_MOTOR = (5, 6, 13)
+LIGHT_SENSOR = 26
+START_BUTTON = 23
+STOP_BUTTON =24
 
 
 class T9(object):
@@ -24,7 +32,7 @@ class T9(object):
     '''
     websocket = list()
     '''
-    Keep a list of websocket connections, to send the current status to.
+    Keep a list of WebSocket connections, to send the current status to.
     '''
     def __init__(self, lpins=(17, 22, 27), rpins=(5, 6, 13)):
         '''
@@ -58,7 +66,7 @@ class T9(object):
 
     def addWebsocket(self, ws):
         '''
-        Add a websocket connection and return its index.
+        Add a WebSocket connection and return its index.
         
         :param ws: WebSocket connection.
         :type ws: tornado.websocket.WebSocketHandler
@@ -73,7 +81,7 @@ class T9(object):
         '''
         Remove a websocker connection front the list of receivers
         
-        :param index: The index of the websocket to remove.
+        :param index: The index of the WebSocket to remove.
         '''
         del T9.websocket[index]
         logger.debug("Removed connection number " + str(index))
@@ -127,15 +135,16 @@ class T9(object):
         self.lpwm.stop()
         self.rpwm.stop()
 
+
 class Sensor(object):
     '''
     This class is the interface to the comparator board and IR sensor
     '''
     websocket = list()
     '''
-    Keep a list of websocket connections, to send the current status to.
+    Keep a list of WebSocket connections, to send the current status to.
     '''
-    def __init__(self, pin=26):
+    def __init__(self, pin=26, light_callback=None, dark_callback=None):
         '''
         Construct an object for a sensor connected to "pin"
         
@@ -143,12 +152,20 @@ class Sensor(object):
         '''
         # Save the pin number
         self.pin = pin
+        # Save the callback functions
+        self.light_callback = light_callback
+        self.dark_callback = dark_callback
         # Set the pin as an input
         GPIO.setup(self.pin, GPIO.IN)
+        #Setup event handling on the sensor
+        if self.light_callback is not None:
+            GPIO.add_event_detect(self.pin, GPIO.FALLING, callback=self.light_callback, bouncetime=100)
+        if self.dark_callback is not None:
+            GPIO.add_event_detect(self.pin, GPIO.RISING, callback=self.dark_callback, bouncetime=100)
 
     def addWebsocket(self, ws):
         '''
-        Add a websocket connection and return its index.
+        Add a WebSocket connection and return its index.
         '''
         Sensor.websocket.append(ws)
         logger.debug("Added connection number " + str(len(Sensor.websocket)))
@@ -156,7 +173,7 @@ class Sensor(object):
 
     def removeWebsocket(self, index):
         '''
-        Remove a websocker connection from the list of clients.
+        Remove a WebSocket connection from the list of clients.
         '''
         del Sensor.websocket[index]
         logger.debug("Removed connection number " + str(index))
@@ -169,6 +186,61 @@ class Sensor(object):
         '''
         ret = GPIO.input(self.pin)
         for connection in Sensor.websocket:
+            connection.write_message('Sensor: ' + str(ret))
+
+        return ret
+    
+
+class Button(object):
+    '''
+    This class is the interface to a button connected to the RPi
+    '''
+    websocket = list()
+    '''
+    Keep a list of WebSocket connections, to send the current status to.
+    '''
+    def __init__(self, pin=23, press_callback=None, release_callback=None):
+        '''
+        Construct an object for a button connected to "pin"
+        
+        :param pin: The pin that the button is connected to, using Broadcomm numbering.
+        '''
+        # Save the pin number
+        self.pin = pin
+        # Save the callback functions
+        self.press_callback = press_callback
+        self.release_callback = release_callback
+        # Set the pin as an input
+        GPIO.setup(self.pin, GPIO.IN)
+        #Setup event handling on the sensor
+        if self.press_callback is not None:
+            GPIO.add_event_detect(self.pin, GPIO.RISING, callback=self.press_callback, bouncetime=200)
+        if self.release_callback is not None:
+            GPIO.add_event_detect(self.pin, GPIO.FALLING, callback=self.release_callback, bouncetime=200)
+
+    def addWebsocket(self, ws):
+        '''
+        Add a WebSocket connection and return its index.
+        '''
+        Button.websocket.append(ws)
+        logger.debug("Added connection number " + str(len(Button.websocket)))
+        return(len(Button.websocket) - 1)
+
+    def removeWebsocket(self, index):
+        '''
+        Remove a WebSocket connection from the list of clients.
+        '''
+        del Button.websocket[index]
+        logger.debug("Removed connection number " + str(index))
+
+    def read(self):
+        '''
+        Read the state of the button.
+        
+        :return: 1 for pressed, 0 otherwise
+        '''
+        ret = GPIO.input(self.pin)
+        for connection in Button.websocket:
             connection.write_message('Sensor: ' + str(ret))
 
         return ret
@@ -195,18 +267,38 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
     '''
     Sensor instance.
     '''
+    start_btn = None
+    '''
+    Start button.
+    '''
+    stop_btn = None
+    '''
+    Stop button.
+    '''
+    light_btn = None
+    '''
+    Calibrate light value button.
+    '''
+    dark_btn = None
+    '''
+    Calibrate dark button.
+    '''
+    running = False
+    '''
+    True when the line follower program is running
+    '''
     def __init__(self, application, request, **kwargs):
         '''
         Constructor for the WebSocket handler.
         '''
         # If there is no robot instance create both that and the sensor instance.
         if WebSocketHandler.robot is None:
-            WebSocketHandler.robot = T9()
-            WebSocketHandler.sensor = Sensor()
+            WebSocketHandler.robot = T9(lpins=LEFT_MOTOR, rpins=RIGHT_MOTOR)
+            WebSocketHandler.sensor = Sensor(pin=LIGHT_SENSOR, light_callback=self.event_light(), dark_callback=self.event_dark())
+            WebSocketHandler.start_btn = Button(pin=START_BUTTON, press_callback=self.event_run())
+            WebSocketHandler.stop_btn = Button(pin=STOP_BUTTON, press_callback=self.event_stop())
         # Call the parent constructor.
         super(WebSocketHandler, self).__init__(application, request, **kwargs)
-        # TODO: look at
-        # tornado.ioloop.IOLoop.instance().add_callback(self.read_sensor())
 
     def open(self):
         '''
@@ -250,23 +342,44 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             WebSocketHandler.robot.removeWebsocket(self.rid)
             WebSocketHandler.robot.removeWebsocket(self.sid)
 
-    def read_sensor(self):
+    def event_light(self):
         '''
-        Read the sensor.
+        Called when the sensor input detects a falling edge (turning light)
         '''
         # Tell the value to any connected client.
+        # the input should be zero since we're called on the falling edge.
         if WebSocketHandler.sensor is not None:
-            val = WebSocketHandler.sensor.read()
-            logger.debug("Read sensor value: " + str(val))
+            logger.debug("Read is seeing light: " + str(val))
 
-        if val == 0:
+        if self.running:
             WebSocketHandler.robot.forward(25, 50)
-        else:
+
+    def event_dark(self):
+        '''
+        Called when the sensor input detects a rising edge (turning dark)
+        '''
+        # Tell the value to any connected client.
+        # the input should be zero since we're called on the falling edge.
+        if WebSocketHandler.sensor is not None:
+            logger.debug("Read is seeing darkness: " + str(val))
+        
+        if self.running:
             WebSocketHandler.robot.forward(50, 25)
+            
+    def event_run(self):
+        '''
+        Start the line following routines.
+        '''
+        WebSocketHandler.running = True;
+
+    def event_stop(self):
+        '''
+        Stop the line following routines.
+        '''
+        WebSocketHandler.running = False;
 
 
-
-# Instantiate the Tornade application.
+# Instantiate the Tornado application.
 APP = tornado.web.Application(handlers=[(r"/", IndexHandler),
                                         (r"/ws", WebSocketHandler)],
                                       autoreload=True)
@@ -305,7 +418,6 @@ def main():
     http_server.listen(options.port)
     logger.info("Listening on port: " + str(options.port))
 
-    tornado.ioloop.PeriodicCallback(WebSocketHandler.read_sensor, 500).start()
     # Start the Tornado event loop.
     tornado.ioloop.IOLoop.instance().start()
 
