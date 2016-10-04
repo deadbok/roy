@@ -11,7 +11,7 @@ class Button(object):
     '''
     Keep a list of WebSocket connections, to send the current status to.
     '''
-    def __init__(self, pin=23, press_callback=None, release_callback=None):
+    def __init__(self, pin=23, inv=False, press_callback=None, release_callback=None):
         '''
         Construct an object for a button connected to "pin"
         
@@ -20,8 +20,12 @@ class Button(object):
         # Save the pin number
         self.pin = pin
         # Save the callback functions
-        self.press_callback = press_callback
-        self.release_callback = release_callback
+	if inv != True:
+            self.press_callback = press_callback
+            self.release_callback = release_callback
+        else:
+            self.press_callback = release_callback
+            self.release_calback = press_callback
         # Set the pin as an input
         GPIO.setup(self.pin, GPIO.IN)
         #Setup event handling on the sensor
@@ -59,6 +63,7 @@ class Button(object):
         '''
         Called on both rising and falling edge. Dispatch to the right handler.
         '''
+	logger.debug('Input on button.')
         val = GPIO.input(self.pin)
         
         for connection in Button.websocket:
