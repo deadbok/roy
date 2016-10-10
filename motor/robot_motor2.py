@@ -18,8 +18,8 @@ while True:
     GPIO.setup(13, GPIO.OUT)
 
     #Variables to st the speed of the motor
-    motor_r = GPIO.PWM(5, 100)
-    motor_l = GPIO.PWM(17, 100)
+    motor_r = GPIO.PWM(17, 100)
+    motor_l = GPIO.PWM(5, 100)
 
     #Buttons
     GPIO.setup(23, GPIO.IN)
@@ -36,11 +36,21 @@ while True:
     motor_l.start(0)
     motor_r.start(0)
 
+    speed = 50
+
     #Check for start button
     print("Press the start button.")
     start_b = GPIO.input(23)
     while start_b  == 1:
        start_b = GPIO.input(23)
+
+    time.sleep(2)
+
+    start_b = GPIO.input(23)
+    if start_b == 0:
+        speed = 35
+
+    print("Speed is: " + str(speed))
 
     direction = 0
     r_count = 0
@@ -55,7 +65,7 @@ while True:
                print("Going left")
            direction = 1
            #Go slightly left
-           motor_l.ChangeDutyCycle(50)
+           motor_l.ChangeDutyCycle(speed)
            motor_r.ChangeDutyCycle(0)
        else:
            if direction != 2:
@@ -63,9 +73,9 @@ while True:
            direction = 2
            #Go right
            motor_l.ChangeDutyCycle(0)
-           motor_r.ChangeDutyCycle(50)
+           motor_r.ChangeDutyCycle(speed)
        
-       time.sleep(0.01)
+       #time.sleep(0.01)
 
        #Get the stop button state
        stop_b = GPIO.input(24)

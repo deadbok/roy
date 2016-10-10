@@ -1,0 +1,9 @@
+[Unit]
+Description=Roy line follower
+
+[Service]
+Type=simple
+ExecStart=/home/pi/roy/motor/robot_motor2.py
+
+[Install]
+WantedBy=multi-user.target
