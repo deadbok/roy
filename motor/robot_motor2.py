@@ -52,28 +52,18 @@ while True:
        #Sensor 0 is dark, sensor 1 is light
        if sensor == 1:
 	   if direction != 1:
-               print("Going straight")
+               print("Going left")
            direction = 1
            #Go slightly left
-           motor_l.ChangeDutyCycle(22)
-           motor_r.ChangeDutyCycle(25)
-           r_count = 0
+           motor_l.ChangeDutyCycle(50)
+           motor_r.ChangeDutyCycle(0)
        else:
-           if r_count < 100:
-               if direction != 2:
-                   print("Going right")
-               direction = 2
-               #Go right
-               motor_l.ChangeDutyCycle(5)
-               motor_r.ChangeDutyCycle(65)
-               r_count += 1
-	   else:
-               if direction != 3:
-                   print("Going left")
-               direction = 3
-               #Go left
-               motor_l.ChangeDutyCycle(80)
-               motor_r.ChangeDutyCycle(10)
+           if direction != 2:
+               print("Going right")
+           direction = 2
+           #Go right
+           motor_l.ChangeDutyCycle(0)
+           motor_r.ChangeDutyCycle(50)
        
        time.sleep(0.01)
 
