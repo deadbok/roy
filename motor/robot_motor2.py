@@ -48,7 +48,7 @@ while True:
 
     start_b = GPIO.input(23)
     if start_b == 0:
-        speed = 35
+        speed = 23
 
     print("Speed is: " + str(speed))
 
@@ -66,13 +66,13 @@ while True:
            direction = 1
            #Go slightly left
            motor_l.ChangeDutyCycle(speed)
-           motor_r.ChangeDutyCycle(0)
+           motor_r.ChangeDutyCycle(7)
        else:
            if direction != 2:
                print("Going right")
            direction = 2
            #Go right
-           motor_l.ChangeDutyCycle(0)
+           motor_l.ChangeDutyCycle(7)
            motor_r.ChangeDutyCycle(speed)
        
        #time.sleep(0.01)
