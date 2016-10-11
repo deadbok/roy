@@ -36,7 +36,7 @@ while True:
     motor_l.start(0)
     motor_r.start(0)
 
-    speed = 50
+    speed = 75
 
     #Check for start button
     print("Press the start button.")
@@ -48,7 +48,7 @@ while True:
 
     start_b = GPIO.input(23)
     if start_b == 0:
-        speed = 23
+        speed = 50
 
     print("Speed is: " + str(speed))
 
